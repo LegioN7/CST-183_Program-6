@@ -60,7 +60,7 @@ public class Encryption {
     }
 
     // Submit Button Method
-    // This houses the lamba action for the submit button
+    // This houses the lambda action for the submit button
     // When you press this button, it gets the key from key.txt
     // It then completes the message input validation, and encryption
     private static JPanel submitButton(JTextField messageText) {
@@ -92,6 +92,7 @@ public class Encryption {
                 userMessage.setMessage(message);
                 userMessage.setPriority(priority);
 
+                // I don't like this and need to redo it
                 String keyFileName = "key.txt";
 
                 try {
@@ -101,7 +102,7 @@ public class Encryption {
                     // Encrypt the message
                     String encryptedMessage = Message.encryptMessage(userMessage);
 
-                    // Show the encrypted message in a dialog box
+                    // Show the encrypted message
                     JOptionPane.showMessageDialog(null, "Encrypted Message: " + encryptedMessage);
                 } catch (IOException ex) {
                     // This is the error when the key.txt file is not read
