@@ -47,117 +47,118 @@ requirements are not followed for the input strings.
 
 import javax.swing.*;
 import java.awt.*;
+import java.io.BufferedReader;
+import java.io.FileReader;
 import java.io.IOException;
 
 
 public class Encryption {
-
-    // Message Field Text Field
-    private static JTextField createMessageTextField() {
-        JTextField messageText = new JTextField();
-        messageText.setMaximumSize(new Dimension(Short.MAX_VALUE, messageText.getPreferredSize().height));
-        return messageText;
-    }
-
     // Submit Button Method
     // This houses the lambda action for the submit button
     // When you press this button, it gets the key from key.txt
     // It then completes the message input validation, and encryption
-    private static JPanel submitButton(JTextField messageText) {
-
-        // JPanel for the submit button
-        JPanel buttonPanel = new JPanel();
-        buttonPanel.setLayout(new BoxLayout(buttonPanel, BoxLayout.X_AXIS));
-
+    private static JPanel createSubmitButtonPanel(JTextField messageText, JTextField fileText) {
+        JPanel panel = new JPanel();
         JButton submitButton = new JButton("Submit");
-        buttonPanel.add(submitButton);
 
-        // Since I am using a newer java, I can move this to a lamba
-        // This will house the action for the submit button
-        // I will get the key from key.txt
-        // When you hit submit, it will validate the original message before alteration then encrypt it
         submitButton.addActionListener(e -> {
             String input = messageText.getText();
+            String fileInput = fileText.getText();
 
+            try {
+                // Validate input and perform encryption using Message.createMessage method
+                Message userMessage = new Message(input);
 
-            // Validate input using Message class
-            Message userMessage = new Message();
+                // Calls the isValid Method from Message.java
+                if (userMessage.isValid()) {
+                    // get the priority
+                    char priority = userMessage.getPriority();
 
-            // Validation the Message Input
-            if (userMessage.messageValidation(input)) {
-                char priority = input.charAt(0);
-                String message = input.substring(2).trim();
-
-                userMessage.setOriginalMessage(input);
-                userMessage.setMessage(message);
-                userMessage.setPriority(priority);
-
-                // I don't like this and need to redo it
-                String keyFileName = "key.txt";
-
-                try {
-                    String key = Message.readKeyFromFile(keyFileName);
+                    String keyFileName = fileInput.trim() + ".txt";
+                    String key = readKeyFromFile(keyFileName);
                     userMessage.setKey(key);
 
                     // Encrypt the message
-                    String encryptedMessage = Message.encryptMessage(userMessage);
+                    String encryptedMessage = userMessage.encryptMessage();
+                    String priorityString = Message.setPriorityString(priority);
 
                     // Show the encrypted message
-                    JOptionPane.showMessageDialog(null, "Encrypted Message: " + encryptedMessage);
-                } catch (IOException ex) {
-                    // This is the error when the key.txt file is not read
-                    JOptionPane.showMessageDialog(null, "Error reading the key from the file.", "Key File Error", JOptionPane.ERROR_MESSAGE);
+                    JOptionPane.showMessageDialog(null, "Priority: " + priorityString + "\n" + "Encrypted Message: " + encryptedMessage);
+                } else {
+                    // Show an error message for invalid input
+                    JOptionPane.showMessageDialog(null, "Invalid input. Please follow the specified format.", "Message Input Error", JOptionPane.ERROR_MESSAGE);
                 }
-            } else {
-                // Show an error message for invalid input
-                JOptionPane.showMessageDialog(null, "Invalid input. Please follow the specified format.", "Message Input Error", JOptionPane.ERROR_MESSAGE);
+            } catch (Message.InvalidInputException ex) {
+                // Handle invalid input exception
+                JOptionPane.showMessageDialog(null, ex.getMessage(), "Invalid Input Error", JOptionPane.ERROR_MESSAGE);
+            } catch (IOException ex) {
+                // Handle file reading error
+                JOptionPane.showMessageDialog(null, "Error reading the key from the file.", "Key File Error", JOptionPane.ERROR_MESSAGE);
             }
         });
 
-        return buttonPanel;
+        panel.add(submitButton);
+        return panel;
+    }
+
+    // Creating the text fields for the panel
+    private static JPanel textFieldComponent(String labelText, JTextField textField) {
+        JPanel panel = new JPanel();
+        panel.setLayout(new BoxLayout(panel, BoxLayout.X_AXIS));
+        JLabel label = new JLabel(labelText);
+        panel.add(label);
+        panel.add(textField);
+
+        return panel;
+    }
+
+    // This is a method to pull the text from a key.txt file
+    public static String readKeyFromFile(String fileName) throws IOException {
+        BufferedReader reader = new BufferedReader(new FileReader(fileName));
+        String key = reader.readLine();
+        reader.close();
+        return key;
     }
 
 
     public static void main(String[] args) {
 
-        // Creating the JFrame
-        // Citing my source for the JPanel content I used
-        // https://www.codejava.net/java-se/swing/jpanel-basic-tutorial-and-examples
+        // Main Panel
+        // Title and Size
         JFrame frame = new JFrame("Message Encryption");
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        frame.setSize(300, 150);
+        frame.setSize(400, 150);
         frame.setResizable(false);
 
-        // Main Frame
-        JPanel mainPanel = new JPanel(new GridLayout(2, 1, 10, 10));
+        // Main Panel
+        // Grid with 3 rows
+        JPanel mainPanel = new JPanel();
+        mainPanel.setLayout(new GridLayout(3, 1));
         mainPanel.setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
 
-        // Message Text Field Method
-        JTextField messageText = createMessageTextField();
+        // The text fields
+        // File text field
+        // Message text field
+        JTextField fileText = new JTextField();
+        JTextField messageText = new JTextField();
 
+        // Migrated this to a method
+        JPanel filePanel = textFieldComponent("File Name: ", fileText);
 
-        // Message input panel
-        JPanel messagePanel = new JPanel();
-        messagePanel.setLayout(new BoxLayout(messagePanel, BoxLayout.X_AXIS));
-        JLabel messageLabel = new JLabel("Message: ");
-        messagePanel.add(messageLabel);
-        messagePanel.add(messageText);
+        //Im going to just match the length for visual purposes
+        JPanel messagePanel = textFieldComponent("Message:   ", messageText);
 
+        // Add the submit button
+        JPanel buttonPanel = createSubmitButtonPanel(messageText, fileText);
 
-        // Submit button panel
-        // I wanted to try to move this to a Method because it's continually been changed
-        // I've readjusted this button text over and over
-        JPanel buttonPanel = submitButton(messageText);
-
-        // Add components to the main panel
+        mainPanel.add(filePanel);
         mainPanel.add(messagePanel);
         mainPanel.add(buttonPanel);
 
-        // Setting the mainPanel as true/visible
         frame.add(mainPanel);
         frame.setVisible(true);
 
-        }
     }
+}
 
 

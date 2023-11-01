@@ -1,13 +1,8 @@
-import javax.swing.*;
-import java.io.BufferedReader;
-import java.io.FileReader;
-import java.io.IOException;
-
 public class Message {
-    private String message;
-    private String originalMessage;
+    private final String message;
+    private final String originalMessage;
+    private final char priority;
     private String key;
-    private char priority;
 
     // Priority is
     // Z - FLASH
@@ -15,94 +10,93 @@ public class Message {
     // P - PRIORITY
     // R - ROUTINE
 
-    public Message() {
-    }
-
-
-    public void setOriginalMessage(String userOriginalMessage){
-        originalMessage = userOriginalMessage;
-    }
-    public void setMessage(String userMessage){
-        message = userMessage;
-    }
-
-    public void setKey(String userKey) {
-        key = userKey;
-    }
-
-    public void setPriority(char userPriority) {
-        priority = userPriority;
-    }
-
-    public String getOriginalMessage(){
-        return originalMessage;
-    }
-
-    public String getMessage() {
-        return message;
-    }
-
-    public String getKey() {
-        return key;
-    }
-
-    public char getPriority() {
-        return priority;
-    }
-
-    // This will use regex to validate the message
-    // The regex 4 entries match the priority
-    // The , matches the required comma format
-    public boolean messageValidation(String originalMessage) {
-
-        // I was having issues with my message input erroring with one character
-        // Because the pattern requires Priority Character, Comma and then a message
-        if (originalMessage.length() < 3) {
-            return false;
+    public Message(String input) throws InvalidInputException {
+        if (input.length() < 3) {
+            throw new InvalidInputException("Invalid input. Message must be at least 3 characters long.");
         }
+        originalMessage = input;
+        priority = input.charAt(0);
+        message = input.substring(2).trim();
+    }
 
+    public static String setPriorityString(char priority) {
+        String priorityString = "";
+
+        return switch (priority) {
+            case 'Z' -> {
+                priorityString = "FLASH";
+                yield priorityString;
+            }
+            case 'O' -> {
+                priorityString = "IMMEDIATE";
+                yield priorityString;
+            }
+            case 'P' -> {
+                priorityString = "PRIORITY";
+                yield priorityString;
+            }
+            case 'R' -> {
+                priorityString = "ROUTINE";
+                yield priorityString;
+            }
+            default -> {
+                priorityString = "ERROR";
+                yield priorityString;
+            }
+        };
+
+    }
+
+    public boolean isValid() {
+        // Check if the input message follows the specified format and length
         String validationPattern = "^[OPRZ],[a-zA-Z ]+$";
-        return originalMessage.matches(validationPattern);
+
+        // Redoing the constructor for the validation
+        boolean hasValidLength = originalMessage.length() >= 3;
+
+        return hasValidLength && originalMessage.matches(validationPattern);
     }
 
+    // I think I caught an error and am redoing this entire method
+    public String encryptMessage() {
 
-    public static String encryptMessage(Message message) {
-        // Get the key and message from the getters
-        String key = message.getKey();
-        String originalMessage = message.getMessage();
+        // Convert the message to uppercase without spaces
+        String uppercaseMessage = message.replaceAll("[^a-zA-Z]", "").toUpperCase();
 
-        // Variables needed for the repeated loops
-        int keyIndex = 0;
-
-        // This will use regex to remove all the spaces
-        originalMessage = originalMessage.replaceAll("[^a-zA-Z]", "").toUpperCase();
-
-        // Repeat the key
+        // We need to repeat the string
+        // I prefer string builder based on my previous program. APPENDING IS GREAT
         StringBuilder repeatedKey = new StringBuilder();
-        for (int i = 0; i < originalMessage.length(); i++) {
-            char keyChar = key.charAt(keyIndex);
+        for (int i = 0; i < uppercaseMessage.length(); i++) {
+            char keyChar = key.charAt(i % key.length());
             repeatedKey.append(keyChar);
-            keyIndex = (keyIndex + 1) % key.length();
         }
 
-        // Encrypt the message
+        // I need to shift the characters
         StringBuilder encryptedMessage = new StringBuilder();
-        for (int i = 0; i < originalMessage.length(); i++) {
-            char originalChar = originalMessage.charAt(i);
+        for (int i = 0; i < uppercaseMessage.length(); i++) {
+            char originalChar = uppercaseMessage.charAt(i);
             char keyChar = repeatedKey.charAt(i);
-            int shiftChar = keyChar - 'A';
-            char encryptedChar = (char) ((originalChar - 'A' + shiftChar + 26) % 26 + 'A');
+            int shift = keyChar - 'A';
+            char encryptedChar = (char) ((originalChar - 'A' + shift + 26) % 26 + 'A');
             encryptedMessage.append(encryptedChar);
         }
 
         return encryptedMessage.toString();
     }
 
-    // This is a method to pull the text from a key.txt file
-    public static String readKeyFromFile(String fileName) throws IOException {
-        BufferedReader reader = new BufferedReader(new FileReader(fileName));
-        String key = reader.readLine();
-        reader.close();
-        return key;
+    public void setKey(String userKey) {
+        key = userKey;
     }
+
+    public char getPriority() {
+        return priority;
+    }
+
+    public static class InvalidInputException extends Exception {
+        public InvalidInputException(String message) {
+            super(message);
+        }
+    }
+
 }
+
